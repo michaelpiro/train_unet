@@ -151,10 +151,22 @@ def train_loop(config, model, vae, noise_scheduler, optimizer, train_dataloader,
         scaler = torch.cuda.amp.GradScaler()  # Initialize GradScaler for mixed precision training
 
         for step, batch in enumerate(train_dataloader):
-            clean_images_drums = batch["drums"].unsqueeze(0)
+            #  batch["drums"] is all the spectograms of the songs with drums
+            # clean_images_drums = batch["drums"].unsqueeze(0)
+            # print(batch)
+            # print(batch[0].shape)
+            clean_images_drums,clean_images_no_drums = batch
+            # print(clean_images_drums.shape)
+            clean_images_no_drums = clean_images_no_drums.unsqueeze(0)
+            clean_images_no_drums = clean_images_no_drums.reshape(-1,1,clean_images_no_drums.shape[2],clean_images_no_drums.shape[3])
+            clean_images_drums = clean_images_drums.unsqueeze(0)
+            clean_images_drums = clean_images_drums.reshape(-1,1,clean_images_drums.shape[2],clean_images_drums.shape[3])
+            print(clean_images_drums.shape)
+            # print(vae.device,model.device)
+
             # print(clean_images_drums.shape)
             clean_images_drums = vae.encode(clean_images_drums).latent_dist.sample()
-            clean_images_no_drums = batch["no_drums"].unsqueeze(0)
+            # clean_images_no_drums = batch["no_drums"].unsqueeze(0)
             clean_images_no_drums = vae.encode(clean_images_no_drums).latent_dist.sample()
             # Sample noise to add to the images
             noise = torch.randn(clean_images_drums.shape).to(clean_images_drums.device)
@@ -200,3 +212,4 @@ def train_loop(config, model, vae, noise_scheduler, optimizer, train_dataloader,
                 if config.push_to_hub:
                     pipeline.push_to_hub(config.TRAINING_REPO, commit_message=f"Epoch {epoch}")
                 pipeline.save_pretrained(config.output_dir)
+

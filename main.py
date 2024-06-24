@@ -130,7 +130,7 @@ def create_dataset_dict(data_dir):
 
 
 #
-# d = create_dataset_dict("/Users/mac/Desktop/demucs_out/mdx_extra")
+# d = create_dataset_dict(data_dir="/Users/mac/Desktop/demucs_out/mdx_extra")
 # audio_dataset = ds.Dataset.from_dict(d).cast_column("drums",ds.Audio())
 # audio_dataset = audio_dataset.cast_column("no_drums",ds.Audio())
 # audio_dataset.push_to_hub("michaelpiro1/separated_music")
@@ -164,6 +164,10 @@ import torch
 import audio_utils
 from all_configurations import TrainingConfig
 
+from dataclasses import dataclass
+from torch.utils.data import DataLoader
+import torch.nn.functional as F
+from diffusers.optimization import get_cosine_schedule_with_warmup
 
 def load_dataloader(config):
     config.dataset_name = "michaelpiro1/separated_music"
@@ -187,33 +191,45 @@ def load_models(config, device=torch.device("cpu")):
 import training as tr
 import torch.nn.functional as F
 import torchaudio
+from dataset import dataset
 
 if __name__ == '__main__':
     config = TrainingConfig()
-    # login(token=config.HF_TOKEN)
-    # wandb.login(key=config.wandb)
-    #
-    # if torch.cuda.is_available():
-    #     device = torch.device("cuda")
-    # else:
-    #     device = torch.device("cpu")
+    login(token=config.HF_TOKEN)
+    config.csv_file_path = "C:\\Users\\michaelpiro1\\PycharmProjects\\train_unet\\dataset\\file.csv"
+    dataset = dataset.CustomAudioDataset(config.csv_file_path)
+    # d = create_dataset_dict("D:\\yuval.shaffir\\separated\\mdx_extra")
+    # audio_dataset = ds.Dataset.from_dict(d).cast_column("drums", ds.Audio())
+    # audio_dataset = audio_dataset.cast_column("no_drums", ds.Audio())
+    # audio_dataset.push_to_hub("michaelpiro1/separated_music")
+    wandb.login(key=config.wandb)
+
+    if torch.cuda.is_available():
+        device = torch.device("cuda")
+    else:
+        device = torch.device("cpu")
+    print(device)
     # train_data_loader = load_dataloader(config)
-    # unet, vae, scheduler, vocoder = load_models(config, device=device)
-    # optimizer = torch.optim.AdamW(unet.parameters(), lr=config.learning_rate)
-    # lr_scheduler = get_cosine_schedule_with_warmup(
-    #     optimizer=optimizer,
-    #     num_warmup_steps=config.lr_warmup_steps,
-    #     num_training_steps=(len(train_data_loader) * config.num_epochs),
-    # )
-    # tr.train_loop(config, unet, vae, scheduler, optimizer, train_data_loader,lr_scheduler)
-    audio, sr = audio_utils.load_audio("audio_example/no_drums.mp3")
-    print(f"audio shape: {audio.shape}")
-    resampled = torchaudio.functional.resample(audio, sr, audio_utils.TARGET_SR)
-    cropped_audio = resampled[10*sr:config.NUM_SAMPLES +10*sr]
-    new_audio,new_sr = tr.inferance(cropped_audio, audio_utils.TARGET_SR, 50)
-    # print(f"copped audio shape: {cropped_audio.shape}")
-    # print(f"new audio length: {len(new_audio)}")
-    audio_utils.save_audio(new_audio, new_sr,os.path.join(config.output_dir, "no_drums_new.mp3"))
+    train_data_loader = DataLoader(dataset, batch_size=config.train_batch_size, shuffle=True)
+    unet, vae, scheduler, vocoder = load_models(config, device=device)
+    unet.train()
+    vae.eval()
+    vocoder.eval()
+    optimizer = torch.optim.AdamW(unet.parameters(), lr=config.learning_rate)
+    lr_scheduler = get_cosine_schedule_with_warmup(
+        optimizer=optimizer,
+        num_warmup_steps=config.lr_warmup_steps,
+        num_training_steps=(len(train_data_loader) * config.num_epochs),
+    )
+    tr.train_loop(config, unet, vae, scheduler, optimizer, train_data_loader,lr_scheduler)
+    # audio, sr = audio_utils.load_audio("audio_example/no_drums.mp3")
+    # print(f"audio shape: {audio.shape}")
+    # resampled = torchaudio.functional.resample(audio, sr, audio_utils.TARGET_SR)
+    # cropped_audio = resampled[10*sr:config.NUM_SAMPLES +10*sr]
+    # new_audio,new_sr = tr.inferance(cropped_audio, audio_utils.TARGET_SR, 50)
+    # # print(f"copped audio shape: {cropped_audio.shape}")
+    # # print(f"new audio length: {len(new_audio)}")
+    # audio_utils.save_audio(new_audio, new_sr,os.path.join(config.output_dir, "no_drums_new.mp3"))
     # TRAINING_REPO = "michaelpiro1/unet_repo"
     # HF_TOKEN = "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"
     # NEW_REPO_ID = "michaelpiro1/train_model"

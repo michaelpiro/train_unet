@@ -12,7 +12,8 @@ class TrainingConfig:
 
     # root_dir =os.path.dirname(os.path.abspath(__file__))
     # output_dir = os.path.join(root_dir,"out_dir")
-    output_dir = "/Users/mac/Desktop/final_proj_unet/out_dir"
+    output_dir = "C:\\Users\\michaelpiro1\\PycharmProjects\\train_unet\\out_dir"
+    # output_dir = "/Users/mac/Desktop/final_proj_unet/out_dir"
     # path_to_components = os.path.join(root_dir,'models')
     # path_to_class_file = os.path.join(root_dir,"inference/pipline.py")
     # """ the path to the real annotation file """
@@ -24,9 +25,9 @@ class TrainingConfig:
     loss_noise_factor = 0.3
     loss_diff_drums_factor = 1 - loss_noise_factor
 
-    train_batch_size = 1
+    train_batch_size = 8
     num_epochs = 50
-    num_diffusion_timesteps = 100
+    num_diffusion_timesteps = 10000
 
     #TODO: change the eval_batch_size to a wanted number
     eval_batch_size = 10  # how many images to sample during evaluation
@@ -35,7 +36,7 @@ class TrainingConfig:
     learning_rate = 1e-4
     lr_warmup_steps = 500
     eval_epoch = num_epochs+1
-    save_model_epochs = 100000000
+    save_model_epochs = 10
     mixed_precision = "fp16"  # `no` for float32, `fp16` for automatic mixed precision
 
     # HUGGINGFACE CONFIGS
@@ -50,7 +51,7 @@ class TrainingConfig:
     NEW_REPO_ID = "michaelpiro1/train_model"
 
     #AUDIO CONFIGS
-    SAMPLE_RATE = 44100
+    SAMPLE_RATE = 44100//3
     N_FFT = 1024
     HOP_LENGTH = 160
     WIN_LENGTH = 1024
@@ -58,7 +59,7 @@ class TrainingConfig:
     FMAX = int(SAMPLE_RATE / 2)
     FMIN = 0
     AUDIO_LEN_SEC = 5
-    TARGET_MEL_LENGTH = 256*2
+    TARGET_MEL_LENGTH = 256
     NUM_SAMPLES = int((TARGET_MEL_LENGTH - 1) * HOP_LENGTH)
     TARGET_LENGTH_SEC = NUM_SAMPLES / SAMPLE_RATE
 
